@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Update Available - ChessLock</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      min-height: 100vh;
+      padding: 40px;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .icon {
+      font-size: 60px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #4aff4a;
+      font-size: 28px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .version-info {
+      text-align: center;
+      color: #888;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .steps {
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .step:last-child {
+      margin-bottom: 0;
+    }
+
+    .step-number {
+      background: #4a4a4a;
+      color: #fff;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      margin-right: 16px;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+      font-size: 16px;
+    }
+
+    .step-description {
+      color: #888;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .step-description a {
+      color: #4a9eff;
+      text-decoration: none;
+    }
+
+    .step-description a:hover {
+      text-decoration: underline;
+    }
+
+    .terminal-command {
+      background: #111;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+      font-size: 13px;
+      margin-top: 8px;
+      color: #4aff4a;
+      word-break: break-all;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .terminal-command:hover {
+      background: #1a1a1a;
+    }
+
+    .terminal-command::after {
+      content: 'Click to copy';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      color: #666;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .terminal-command.copied::after {
+      content: 'Copied!';
+      color: #4aff4a;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .button {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+
+    .button-primary {
+      background: #4a9eff;
+      color: white;
+    }
+
+    .button-primary:hover {
+      background: #3a8eef;
+    }
+
+    .button-secondary {
+      background: #4a4a4a;
+      color: white;
+    }
+
+    .button-secondary:hover {
+      background: #5a5a5a;
+    }
+
+    .note {
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🎉</div>
+    <h1>Update Available</h1>
+    <p class="version-info">
+      <span id="currentVersion">v?.?.?</span> → <span id="newVersion">v?.?.?</span>
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <div class="step-title">Quit ChessLock</div>
+          <div class="step-description">Close this app before installing the update.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <div class="step-title">Move old version to Trash</div>
+          <div class="step-description">Open Finder, go to Applications, and drag ChessLock to Trash.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <div class="step-title">Download the new version</div>
+          <div class="step-description">
+            <a href="#" id="downloadLink" target="_blank">Click here to download ChessLock <span id="downloadVersion"></span></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <div class="step-title">Install the new version</div>
+          <div class="step-description">Open the downloaded .dmg file and drag ChessLock to Applications.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <div class="step-title">Remove quarantine</div>
+          <div class="step-description">Open Terminal and run this command:</div>
+          <div class="terminal-command" id="terminalCommand" onclick="copyCommand()">xattr -cr /Applications/ChessLock.app</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="button button-secondary" onclick="window.electronAPI.dismissUpdate()">Later</button>
+      <button class="button button-primary" onclick="window.electronAPI.openDownloadPage()">Open Downloads</button>
+    </div>
+
+    <p class="note">You can also find updates at github.com/clickagree/ChessLock/releases</p>
+  </div>
+
+  <script>
+    // Get version info from query params
+    const params = new URLSearchParams(window.location.search);
+    const currentVersion = params.get('current') || '?.?.?';
+    const newVersion = params.get('new') || '?.?.?';
+
+    document.getElementById('currentVersion').textContent = `v${currentVersion}`;
+    document.getElementById('newVersion').textContent = `v${newVersion}`;
+    document.getElementById('downloadVersion').textContent = `v${newVersion}`;
+    document.getElementById('downloadLink').href = `https://github.com/clickagree/ChessLock/releases/tag/v${newVersion}`;
+
+    function copyCommand() {
+      const command = document.getElementById('terminalCommand');
+      navigator.clipboard.writeText('xattr -cr /Applications/ChessLock.app');
+      command.classList.add('copied');
+      setTimeout(() => command.classList.remove('copied'), 2000);
+    }
+  </script>
+</body>
+</html>

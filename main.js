@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, Menu, powerSaveBlocker, ipcMain, screen, dialog } = require('electron');
+const { app, BrowserWindow, globalShortcut, Menu, powerSaveBlocker, ipcMain, screen, dialog, shell } = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
@@ -75,6 +75,8 @@ let allowQuit = true;
 let monitoringInterval = null;
 let updateStatus = { status: 'checking', version: null, error: null };
 let updateDownloaded = false;
+let isQuitting = false;
+let pendingUpdateVersion = null;
 let resolveCheckInterval = null;
 let isShowingWarning = false;
 let sessionTerminated = false;
@@ -368,6 +370,20 @@ function createWindow() {
     }, 200);
   });
 
+  // Handle update page actions
+  ipcMain.on('dismiss-update', () => {
+    // Go back to start page
+    mainWindow.loadFile('start.html');
+  });
+
+  ipcMain.on('open-download-page', () => {
+    // Open GitHub releases page in browser
+    const releaseUrl = pendingUpdateVersion 
+      ? `https://github.com/clickagree/ChessLock/releases/tag/v${pendingUpdateVersion}`
+      : 'https://github.com/clickagree/ChessLock/releases';
+    shell.openExternal(releaseUrl);
+  });
+
   // Navigation restriction (disabled for testing)
   // mainWindow.webContents.on('will-navigate', (event, url) => {
     // if (!url.includes('chess.com') && !url.includes('start.html')) {
@@ -634,20 +650,24 @@ autoUpdater.on('update-downloaded', (info) => {
   console.log('Update downloaded:', info.version);
   updateStatus = { status: 'ready', version: info.version, error: null };
   updateDownloaded = true;
+  pendingUpdateVersion = info.version;
   
-  // Only prompt if proctor hasn't started yet
+  // Only show update page if proctor hasn't started yet
   if (!proctorStarted && mainWindow && !mainWindow.isDestroyed()) {
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Update Ready',
-      message: `Version ${info.version} has been downloaded.`,
-      detail: 'Click "Restart Now" to install the update.',
-      buttons: ['Later', 'Restart Now']
-    }).then((result) => {
-      if (result.response === 1) {
-        allowQuit = true;
-        autoUpdater.quitAndInstall(false, true);
-      }
+    // Make window resizable and not force-focused for update page
+    mainWindow.setResizable(true);
+    mainWindow.setAlwaysOnTop(false);
+    mainWindow.setMinimumSize(500, 600);
+    mainWindow.setSize(600, 700);
+    mainWindow.center();
+    
+    // Load update instructions page
+    const currentVersion = app.getVersion();
+    mainWindow.loadFile('update.html', { 
+      query: { 
+        current: currentVersion, 
+        new: info.version 
+      } 
     });
   }
 });
@@ -664,9 +684,6 @@ autoUpdater.on('error', (err) => {
 app.on('before-quit', (e) => {
   if (!allowQuit) {
     e.preventDefault();
-  } else if (updateDownloaded) {
-    // If update is downloaded and we're allowed to quit, install it
-    autoUpdater.quitAndInstall(false, true);
   }
 });
 

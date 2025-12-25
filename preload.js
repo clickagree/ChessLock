@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   warningTimerExpired: () => ipcRenderer.send('warning-timer-expired'),
   terminateProctor: () => ipcRenderer.send('terminate-proctor'),
   endProctor: () => ipcRenderer.send('end-proctor'),
+  dismissUpdate: () => ipcRenderer.send('dismiss-update'),
+  openDownloadPage: () => ipcRenderer.send('open-download-page'),
   onIssueResolved: (callback) => {
     const handler = () => {
       callback();
