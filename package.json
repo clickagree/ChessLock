@@ -1,6 +1,6 @@
 {
   "name": "chesslock",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Chess.com kiosk mode app for macOS",
   "main": "main.js",
   "scripts": {
