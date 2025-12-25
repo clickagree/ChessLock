@@ -26,6 +26,7 @@
     "productName": "ChessLock",
     "mac": {
       "category": "public.app-category.games",
+      "icon": "img/logo.icns",
       "target": [
         {
           "target": "dmg",
