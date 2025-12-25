@@ -230,7 +230,6 @@
     </div>
 
     <div class="buttons">
-      <button class="button button-secondary" onclick="window.electronAPI.dismissUpdate()">Later</button>
       <button class="button button-primary" onclick="window.electronAPI.openDownloadPage()">Open Downloads</button>
     </div>
 
@@ -246,7 +245,7 @@
     document.getElementById('currentVersion').textContent = `v${currentVersion}`;
     document.getElementById('newVersion').textContent = `v${newVersion}`;
     document.getElementById('downloadVersion').textContent = `v${newVersion}`;
-    document.getElementById('downloadLink').href = `https://github.com/clickagree/ChessLock/releases/tag/v${newVersion}`;
+    document.getElementById('downloadLink').href = `https://github.com/clickagree/ChessLock/releases`;
 
     function copyCommand() {
       const command = document.getElementById('terminalCommand');

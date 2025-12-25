@@ -378,10 +378,7 @@ function createWindow() {
 
   ipcMain.on('open-download-page', () => {
     // Open GitHub releases page in browser
-    const releaseUrl = pendingUpdateVersion 
-      ? `https://github.com/clickagree/ChessLock/releases/tag/v${pendingUpdateVersion}`
-      : 'https://github.com/clickagree/ChessLock/releases';
-    shell.openExternal(releaseUrl);
+    shell.openExternal('https://github.com/clickagree/ChessLock/releases');
   });
 
   // Navigation restriction (disabled for testing)
