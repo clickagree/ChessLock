@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkDisplays: () => ipcRenderer.invoke('check-displays'),
   checkBluetooth: () => ipcRenderer.invoke('check-bluetooth'),
   checkUsb: () => ipcRenderer.invoke('check-usb'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),
   warningTimerExpired: () => ipcRenderer.send('warning-timer-expired'),
   terminateProctor: () => ipcRenderer.send('terminate-proctor'),
   endProctor: () => ipcRenderer.send('end-proctor'),

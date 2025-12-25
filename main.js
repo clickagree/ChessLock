@@ -73,6 +73,7 @@ let mainWindow;
 let warningWindow = null;
 let allowQuit = true;
 let monitoringInterval = null;
+let updateStatus = { status: 'checking', version: null, error: null };
 let resolveCheckInterval = null;
 let isShowingWarning = false;
 let sessionTerminated = false;
@@ -255,6 +256,16 @@ function createWindow() {
   // Handle USB device check
   ipcMain.handle('check-usb', async () => {
     return await checkUsbDevices();
+  });
+
+  // Handle app version request
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
+
+  // Handle update status request
+  ipcMain.handle('get-update-status', () => {
+    return updateStatus;
   });
 
   // Handle start proctor button
@@ -600,22 +611,27 @@ app.whenReady().then(() => {
 // Auto-updater event handlers
 autoUpdater.on('checking-for-update', () => {
   console.log('Checking for updates...');
+  updateStatus = { status: 'checking', version: null, error: null };
 });
 
 autoUpdater.on('update-available', (info) => {
   console.log('Update available:', info.version);
+  updateStatus = { status: 'downloading', version: info.version, error: null };
 });
 
 autoUpdater.on('update-not-available', (info) => {
   console.log('No update available, current version:', app.getVersion());
+  updateStatus = { status: 'up-to-date', version: null, error: null };
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
   console.log(`Download progress: ${Math.round(progressObj.percent)}%`);
+  updateStatus = { status: 'downloading', version: updateStatus.version, progress: Math.round(progressObj.percent), error: null };
 });
 
 autoUpdater.on('update-downloaded', (info) => {
   console.log('Update downloaded:', info.version);
+  updateStatus = { status: 'ready', version: info.version, error: null };
   // Only prompt if proctor hasn't started yet
   if (!proctorStarted) {
     dialog.showMessageBox(mainWindow, {
@@ -635,6 +651,7 @@ autoUpdater.on('update-downloaded', (info) => {
 
 autoUpdater.on('error', (err) => {
   console.error('Auto-updater error:', err);
+  updateStatus = { status: 'error', version: null, error: err.message };
 });
 
 // Prevent quit unless allowed

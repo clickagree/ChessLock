@@ -54,12 +54,47 @@
       font-size: 14px;
       color: #888;
     }
+
+    .version-info {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .version-info .version {
+      margin-bottom: 4px;
+    }
+
+    .version-info .update-status {
+      color: #888;
+    }
+
+    .version-info .update-status.downloading {
+      color: #4a9eff;
+    }
+
+    .version-info .update-status.ready {
+      color: #4aff4a;
+    }
+
+    .version-info .update-status.error {
+      color: #ff6b6b;
+    }
   </style>
 </head>
 <body>
   <div class="pawn">♟</div>
   <button class="start-button" id="startButton" disabled>Start Proctor</button>
   <p class="status" id="status">Checking for Zoom...</p>
+
+  <div class="version-info">
+    <div class="version" id="versionDisplay">v...</div>
+    <div class="update-status" id="updateStatus">Checking for updates...</div>
+  </div>
 
   <script>
     const startButton = document.getElementById('startButton');
@@ -174,6 +209,56 @@
     startButton.addEventListener('click', () => {
       window.electronAPI.startProctor();
     });
+
+    // Display version and update status
+    async function loadVersionInfo() {
+      try {
+        const version = await window.electronAPI.getAppVersion();
+        document.getElementById('versionDisplay').textContent = `v${version}`;
+      } catch (err) {
+        document.getElementById('versionDisplay').textContent = 'v?.?.?';
+      }
+    }
+
+    async function checkUpdateStatus() {
+      try {
+        const update = await window.electronAPI.getUpdateStatus();
+        const updateEl = document.getElementById('updateStatus');
+        
+        switch (update.status) {
+          case 'checking':
+            updateEl.textContent = 'Checking for updates...';
+            updateEl.className = 'update-status';
+            break;
+          case 'downloading':
+            updateEl.textContent = update.progress 
+              ? `Downloading update v${update.version}... ${update.progress}%`
+              : `Downloading update v${update.version}...`;
+            updateEl.className = 'update-status downloading';
+            break;
+          case 'ready':
+            updateEl.textContent = `Update v${update.version} ready - restart to install`;
+            updateEl.className = 'update-status ready';
+            break;
+          case 'up-to-date':
+            updateEl.textContent = 'Up to date';
+            updateEl.className = 'update-status';
+            break;
+          case 'error':
+            updateEl.textContent = 'Update check failed';
+            updateEl.className = 'update-status error';
+            break;
+          default:
+            updateEl.textContent = '';
+        }
+      } catch (err) {
+        // Ignore errors
+      }
+    }
+
+    loadVersionInfo();
+    checkUpdateStatus();
+    setInterval(checkUpdateStatus, 2000);
 
     checkAll();
     setInterval(checkAll, 2000);
