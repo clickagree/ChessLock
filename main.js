@@ -74,6 +74,7 @@ let warningWindow = null;
 let allowQuit = true;
 let monitoringInterval = null;
 let updateStatus = { status: 'checking', version: null, error: null };
+let updateDownloaded = false;
 let resolveCheckInterval = null;
 let isShowingWarning = false;
 let sessionTerminated = false;
@@ -632,18 +633,20 @@ autoUpdater.on('download-progress', (progressObj) => {
 autoUpdater.on('update-downloaded', (info) => {
   console.log('Update downloaded:', info.version);
   updateStatus = { status: 'ready', version: info.version, error: null };
+  updateDownloaded = true;
+  
   // Only prompt if proctor hasn't started yet
-  if (!proctorStarted) {
+  if (!proctorStarted && mainWindow && !mainWindow.isDestroyed()) {
     dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Update Ready',
       message: `Version ${info.version} has been downloaded.`,
-      detail: 'The update will be installed when you quit the app.',
-      buttons: ['OK', 'Restart Now']
+      detail: 'Click "Restart Now" to install the update.',
+      buttons: ['Later', 'Restart Now']
     }).then((result) => {
       if (result.response === 1) {
         allowQuit = true;
-        autoUpdater.quitAndInstall();
+        autoUpdater.quitAndInstall(false, true);
       }
     });
   }
@@ -651,13 +654,19 @@ autoUpdater.on('update-downloaded', (info) => {
 
 autoUpdater.on('error', (err) => {
   console.error('Auto-updater error:', err);
-  updateStatus = { status: 'error', version: null, error: err.message };
+  // Don't overwrite 'ready' status if update was already downloaded
+  if (!updateDownloaded) {
+    updateStatus = { status: 'error', version: null, error: err.message };
+  }
 });
 
 // Prevent quit unless allowed
 app.on('before-quit', (e) => {
   if (!allowQuit) {
     e.preventDefault();
+  } else if (updateDownloaded) {
+    // If update is downloaded and we're allowed to quit, install it
+    autoUpdater.quitAndInstall(false, true);
   }
 });
 

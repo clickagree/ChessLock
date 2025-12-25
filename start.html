@@ -105,9 +105,10 @@
     let screenShareReady = false;
     let bluetoothReady = false;
     let usbReady = false;
+    let updateReady = true; // true = no pending update, can start
 
     function updateButton() {
-      startButton.disabled = !(zoomReady && displayReady && screenShareReady && bluetoothReady && usbReady);
+      startButton.disabled = !(zoomReady && displayReady && screenShareReady && bluetoothReady && usbReady && updateReady);
     }
 
     async function checkUsb() {
@@ -229,30 +230,38 @@
           case 'checking':
             updateEl.textContent = 'Checking for updates...';
             updateEl.className = 'update-status';
+            updateReady = false; // Don't allow start while checking
             break;
           case 'downloading':
             updateEl.textContent = update.progress 
               ? `Downloading update v${update.version}... ${update.progress}%`
               : `Downloading update v${update.version}...`;
             updateEl.className = 'update-status downloading';
+            updateReady = false; // Don't allow start while downloading
             break;
           case 'ready':
             updateEl.textContent = `Update v${update.version} ready - restart to install`;
             updateEl.className = 'update-status ready';
+            updateReady = false; // Don't allow start if update pending
             break;
           case 'up-to-date':
             updateEl.textContent = 'Up to date';
             updateEl.className = 'update-status';
+            updateReady = true; // OK to start
             break;
           case 'error':
             updateEl.textContent = 'Update check failed';
             updateEl.className = 'update-status error';
+            updateReady = true; // Allow start even if update check failed
             break;
           default:
             updateEl.textContent = '';
+            updateReady = true;
         }
+        updateButton();
       } catch (err) {
-        // Ignore errors
+        updateReady = true; // Allow start if API fails
+        updateButton();
       }
     }
 
