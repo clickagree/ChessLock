@@ -81,21 +81,27 @@
     issueEl.textContent = issue;
 
     let seconds = 10;
+    let timerStopped = false;
     
     const interval = setInterval(() => {
+      if (timerStopped) return;
+      
       seconds--;
       timerEl.textContent = seconds;
       timerTextEl.textContent = seconds;
       
       if (seconds <= 0) {
+        timerStopped = true;
         clearInterval(interval);
         window.electronAPI.warningTimerExpired();
       }
     }, 1000);
 
-    // Listen for issue resolved
+    // Listen for issue resolved - window will be closed by main process
     window.electronAPI.onIssueResolved(() => {
+      timerStopped = true;
       clearInterval(interval);
+      // Window will be closed by main process
     });
   </script>
 </body>

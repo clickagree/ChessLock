@@ -1,8 +1,13 @@
-const { app, BrowserWindow, globalShortcut, Menu, powerSaveBlocker, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, globalShortcut, Menu, powerSaveBlocker, ipcMain, screen, dialog } = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
+const { autoUpdater } = require('electron-updater');
+
+// Auto-updater configuration
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
 
 // Try to fix crashes with GPU flags
 app.commandLine.appendSwitch('disable-gpu-sandbox');
@@ -71,6 +76,7 @@ let monitoringInterval = null;
 let resolveCheckInterval = null;
 let isShowingWarning = false;
 let sessionTerminated = false;
+let proctorStarted = false;
 
 // Block system sleep/screen saver
 let powerSaveId = null;
@@ -229,9 +235,6 @@ function createWindow() {
     }
     return { action: 'allow' };
   });
-
-  // Track if proctor has started
-  let proctorStarted = false;
 
   // Handle Zoom camera check
   ipcMain.handle('check-zoom-camera', async () => {
@@ -531,6 +534,15 @@ function terminateChessSession() {
     warningWindow = null;
   }
   
+  // Exit kiosk/fullscreen mode to allow button interaction
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setKiosk(false);
+    mainWindow.setSimpleFullScreen(false);
+    mainWindow.setFullScreen(false);
+    // Keep alwaysOnTop but allow interaction
+    mainWindow.setAlwaysOnTop(true, 'floating');
+  }
+  
   // Load terminated screen in main window (closes chess.com)
   mainWindow.loadFile('terminated.html');
 }
@@ -548,6 +560,8 @@ function blockShortcuts() {
     'CommandOrControl+Shift+Escape',
     'F11',                     // Fullscreen toggle
     'CommandOrControl+Shift+F', // Find/Search
+    'CommandOrControl+Shift+Q', // macOS logout dialog
+    'Command+Shift+Q',          // macOS logout dialog (explicit)
   ];
 
   shortcutsToBlock.forEach(shortcut => {
@@ -568,12 +582,59 @@ app.whenReady().then(() => {
 
   createWindow();
   blockShortcuts();
+  
+  // Check for updates (only in production)
+  if (!app.isPackaged) {
+    console.log('Skipping auto-update check in development mode');
+  } else {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+});
+
+// Auto-updater event handlers
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for updates...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available:', info.version);
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('No update available, current version:', app.getVersion());
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  console.log(`Download progress: ${Math.round(progressObj.percent)}%`);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded:', info.version);
+  // Only prompt if proctor hasn't started yet
+  if (!proctorStarted) {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Update Ready',
+      message: `Version ${info.version} has been downloaded.`,
+      detail: 'The update will be installed when you quit the app.',
+      buttons: ['OK', 'Restart Now']
+    }).then((result) => {
+      if (result.response === 1) {
+        allowQuit = true;
+        autoUpdater.quitAndInstall();
+      }
+    });
+  }
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Auto-updater error:', err);
 });
 
 // Prevent quit unless allowed
@@ -584,7 +645,10 @@ app.on('before-quit', (e) => {
 });
 
 app.on('window-all-closed', () => {
-  // Do nothing on macOS (standard behavior)
+  // Quit if proctor hasn't started yet
+  if (!proctorStarted) {
+    app.quit();
+  }
 });
 
 app.on('will-quit', () => {

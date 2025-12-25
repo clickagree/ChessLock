@@ -13,7 +13,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   warningTimerExpired: () => ipcRenderer.send('warning-timer-expired'),
   terminateProctor: () => ipcRenderer.send('terminate-proctor'),
   endProctor: () => ipcRenderer.send('end-proctor'),
-  onIssueResolved: (callback) => ipcRenderer.on('issue-resolved', callback)
+  onIssueResolved: (callback) => {
+    const handler = () => {
+      callback();
+      ipcRenderer.removeListener('issue-resolved', handler);
+    };
+    ipcRenderer.on('issue-resolved', handler);
+  }
 });
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -90,13 +96,13 @@ window.addEventListener('DOMContentLoaded', () => {
     // Add subtle monitoring indicator in bottom-left corner
     const monitoringBanner = document.createElement('div');
     monitoringBanner.id = 'chesslock-monitoring-banner';
-    monitoringBanner.innerHTML = `🔒 Proctored`;
+    monitoringBanner.innerHTML = `Proctored`;
     monitoringBanner.style.cssText = `
       position: fixed;
       bottom: 8px;
       left: 8px;
       z-index: 999998;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(107, 255, 70, 0.6);
       color: rgba(255, 255, 255, 0.8);
       padding: 4px 10px;
       border-radius: 4px;
