@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChessLock</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      user-select: none;
+    }
+
+    .pawn {
+      font-size: 120px;
+      margin-bottom: 40px;
+    }
+
+    .start-button {
+      background: #4a4a4a;
+      border: none;
+      color: white;
+      padding: 16px 48px;
+      font-size: 18px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .start-button:hover:not(:disabled) {
+      background: #5a5a5a;
+    }
+
+    .start-button:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="pawn">♟</div>
+  <button class="start-button" id="startButton" disabled>Start Proctor</button>
+  <p class="status" id="status">Checking for Zoom...</p>
+
+  <script>
+    const startButton = document.getElementById('startButton');
+    const status = document.getElementById('status');
+
+    let zoomReady = false;
+    let displayReady = false;
+    let screenShareReady = false;
+    let bluetoothReady = false;
+    let usbReady = false;
+
+    function updateButton() {
+      startButton.disabled = !(zoomReady && displayReady && screenShareReady && bluetoothReady && usbReady);
+    }
+
+    async function checkUsb() {
+      try {
+        const result = await window.electronAPI.checkUsb();
+        if (result.hasUsbDevices) {
+          usbReady = false;
+          return 'Disconnect all USB devices';
+        } else {
+          usbReady = true;
+          return null;
+        }
+      } catch (err) {
+        usbReady = true;
+        return null;
+      }
+    }
+
+    async function checkBluetooth() {
+      try {
+        const result = await window.electronAPI.checkBluetooth();
+        if (result.bluetoothEnabled) {
+          bluetoothReady = false;
+          return 'Turn off Bluetooth';
+        } else {
+          bluetoothReady = true;
+          return null;
+        }
+      } catch (err) {
+        bluetoothReady = true;
+        return null;
+      }
+    }
+
+    async function checkDisplays() {
+      try {
+        const result = await window.electronAPI.checkDisplays();
+        if (result.count > 1) {
+          displayReady = false;
+          return 'Disconnect external display';
+        } else {
+          displayReady = true;
+          return null;
+        }
+      } catch (err) {
+        displayReady = true;
+        return null;
+      }
+    }
+
+    async function checkZoomCamera() {
+      try {
+        const result = await window.electronAPI.checkZoomCamera();
+        if (!result.zoomRunning) {
+          zoomReady = false;
+          screenShareReady = false;
+          return 'Start Zoom with camera on';
+        }
+        if (!result.cameraInUse) {
+          zoomReady = false;
+          screenShareReady = result.screenSharing;
+          return 'Turn on your Zoom camera';
+        }
+        if (!result.screenSharing) {
+          zoomReady = true;
+          screenShareReady = false;
+          return 'Share your screen in Zoom';
+        }
+        // All good
+        zoomReady = true;
+        screenShareReady = true;
+        return 'Zoom ready ✓';
+      } catch (err) {
+        zoomReady = false;
+        screenShareReady = false;
+        return 'Start Zoom with camera on';
+      }
+    }
+
+    async function checkAll() {
+      const usbError = await checkUsb();
+      const bluetoothError = await checkBluetooth();
+      const displayError = await checkDisplays();
+      const zoomStatus = await checkZoomCamera();
+      
+      if (usbError) {
+        status.textContent = usbError;
+      } else if (bluetoothError) {
+        status.textContent = bluetoothError;
+      } else if (displayError) {
+        status.textContent = displayError;
+      } else {
+        status.textContent = zoomStatus;
+      }
+      
+      updateButton();
+    }
+
+    startButton.addEventListener('click', () => {
+      window.electronAPI.startProctor();
+    });
+
+    checkAll();
+    setInterval(checkAll, 2000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "name": "chesslock",
+  "version": "1.5.0",
+  "description": "Chess.com kiosk mode app for macOS",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac"
+  },
+  "keywords": [
+    "chess",
+    "kiosk",
+    "electron"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^27.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.chesslock.app",
+    "productName": "ChessLock",
+    "mac": {
+      "category": "public.app-category.games",
+      "target": "dmg"
+    }
+  }
+}
